@@ -1,0 +1,7 @@
+completionpass,mod_evaluation
+completionpassdesc,mod_evaluation
+completionpass_help,mod_evaluation
+completiondetail:passgrade,mod_evaluation
+gradetopassnotset,mod_evaluation
+basicideasofquiz,mod_evaluation
+completionminattemptsgroup,mod_evaluation
