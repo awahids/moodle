@@ -17,7 +17,10 @@ $data = get_data_from_database($id);
 $hero_section = new CustomTable();
 echo $hero_section->definition($data);
 
-$table = new ListUser();
-echo $table->definition($data);
+// $table = new ListUser();
+// echo $table->definition($data);
+
+$tableDinamis = new CustomTableDinamis();
+echo $tableDinamis->definition();
 
 echo $OUTPUT->footer();

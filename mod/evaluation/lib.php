@@ -124,3 +124,106 @@ class ListUser extends html_table
     return $tablehtml;
   }
 }
+
+class CustomTableDinamis extends html_table
+{
+  public function definition()
+  {
+    global $DB;
+
+    $attributes = $this->getAttributesFromDatabase();
+
+    $data = $this->prepareTableData($attributes);
+
+    $heading = html_writer::tag('p', 'Teknik Audit Berbantuan Komputer', array('style' => 'font-size: 20px;'));
+    echo $heading;
+
+    // Output dynamic table
+    $table = new html_table();
+    $table->responsive = true;
+
+    $tableHtml = '<div>';
+    $tableHtml .= '<table>';
+    $tableHtml .= '<form method="post">';
+    $tableHtml .= '<table class="custom-table table">';
+    $tableHtml .= '<tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td>Persentasi</td>';
+
+    foreach ($data['valueAttributes'] as $index => $key) {
+      $tableHtml .= '<td><input type="number" name="' . $key . $data['attributeIds'][$index] . '"></td>';
+    }
+
+    $tableHtml .= '<td></td>';
+    $tableHtml .= '<td>';
+    $tableHtml .= '<input type="submit" name="submitbutton" value="Submit" style="background-color: green; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">';
+    $tableHtml .= '</td>';
+    $tableHtml .= '</table>';
+    $tableHtml .= '</form>';
+    $tableHtml .= '</div>';
+
+    $table->head = $data['labels'];
+    $output_array = [];
+    $count = 1;
+    foreach ($data['user'] as $index => $user) {
+      $output_array[] = array_merge(array($count++), $data['nip'][$index], $user, $data['userValues'][$index]);
+    }
+
+    foreach ($output_array as $key) {
+      $table->data[] = $key;
+    }
+
+    echo $tableHtml;
+    return html_writer::table($table);
+  }
+
+  private function getAttributesFromDatabase()
+  {
+    global $DB;
+    $sql = "SELECT * FROM mdl_attributes";
+    return $DB->get_records_sql($sql);
+  }
+
+  private function prepareTableData($attributes)
+  {
+    global $DB;
+
+    $data = array();
+
+    $data['labels'] = array("No", "NIP", "Nama");
+    $data['userValues'] = array();
+
+    foreach ($attributes as $attribute) {
+      $sql = "SELECT u.firstname as nama, 
+                            u.id as nip,
+                            v.value as value
+                    FROM mdl_values as v
+                    JOIN mdl_user as u ON v.userid = u.id
+                    JOIN mdl_attributes as a ON v.attributeid = a.id
+                    WHERE v.attributeid = :attributeid
+                    GROUP BY u.id";
+
+      $params = ['attributeid' => $attribute->id];
+      $values = $DB->get_records_sql($sql, $params);
+
+      foreach ($values as $value) {
+        $data['nip'][$value->nip] = array_unique((array)$value->nip);
+        $data['user'][$value->nip] = array_unique((array)$value->nama);
+        $data['userValues'][$value->nip][] = $value->value;
+      }
+
+      $data['labels'][] = $attribute->label;
+
+      if ($attribute->value == "bobot") {
+        $data['valueAttributes'][$attribute->id] = $attribute->value;
+        $data['attributeIds'][$attribute->id] = $attribute->id;
+      }
+    }
+
+    return $data;
+  }
+}
