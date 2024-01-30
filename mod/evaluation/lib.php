@@ -127,23 +127,116 @@ class ListUser extends html_table
 
 class CustomTableDinamis extends html_table
 {
+  // public function definition()
+  // {
+  //   global $DB;
+
+  //   $attributes = $this->getAttributesFromDatabase();
+  //   $data = $this->prepareTableData($attributes);
+
+  //   $output_array = [];
+  //   $count = 1;
+  //   foreach ($data['user'] as $index => $user) {
+  //     $output_array[] = array_merge(
+  //       array($count++),
+  //       $data['nip'][$index],
+  //       $user,
+  //       $data['userValues'][$index]
+  //     );
+  //   }
+
+  //   $heading = html_writer::tag('p', 'Teknik Audit Berbantuan Komputer', array('style' => 'font-size: 20px;'));
+  //   echo $heading;
+
+  //   foreach ($data['attributeIds'] as $attributeId) {
+  //     $values = $DB->get_records_sql('SELECT * FROM mdl_values WHERE attributeid = ?', [$attributeId]);
+  //     foreach ($values as $value) {
+  //       if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submitbutton'])) {
+  //         $value->value = $_POST[$value->value . $attributeId];
+
+  //         $DB->execute('UPDATE mdl_values SET value = ? WHERE id = ?', [$value->value, $value->id]);
+  //       } else {
+  //         $value->value = '';
+  //         $DB->execute('UPDATE mdl_values SET value = ? WHERE id = ?', [$value->value, $value->id]);
+  //       }
+  //     }
+  //   }
+
+  //   // Output dynamic table
+  //   $table = new html_table();
+  //   $table->responsive = true;
+
+  //   $tableHtml = '<div>';
+  //   $tableHtml .= '<form method="post">';
+  //   $tableHtml .= '<table class="custom-table table">';
+  //   $tableHtml .= '<tr>
+  //               <td></td>
+  //               <td></td>
+  //               <td></td>
+  //               <td></td>
+  //               <td></td>
+  //               <td>Persentasi</td>';
+
+  //   foreach ($data['valueAttributes'] as $index => $key) {
+  //     $tableHtml .= '<td><input type="number" name="' . $key . $data['attributeIds'][$index] . '"></td>';
+  //   }
+
+  //   $tableHtml .= '<td></td>';
+  //   $tableHtml .= '<td>';
+  //   $tableHtml .= '<input type="submit" name="submitbutton"
+  //               value="Submit" style="background-color: green; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">';
+  //   $tableHtml .= '</td>';
+  //   $tableHtml .= '</tr>';
+  //   $tableHtml .= '</table>';
+  //   $tableHtml .= '</form>';
+  //   $tableHtml .= '</div>';
+
+  //   $table->head = $data['labels'];
+
+  //   foreach ($output_array as $key) {
+  //     $table->data[] = $key;
+  //   }
+
+  //   echo $tableHtml;
+  //   return html_writer::table($table);
+  // }
   public function definition()
   {
     global $DB;
 
     $attributes = $this->getAttributesFromDatabase();
-
     $data = $this->prepareTableData($attributes);
 
     $heading = html_writer::tag('p', 'Teknik Audit Berbantuan Komputer', array('style' => 'font-size: 20px;'));
     echo $heading;
+
+    if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submitbutton'])) {
+      foreach ($data['attributeIds'] as $attributeId) {
+        $values = $DB->get_records_sql('SELECT * FROM mdl_values WHERE attributeid = ?', [$attributeId]);
+        foreach ($values as $value) {
+          $postKey = 'value_' . $value->id;
+
+          // Check if the key exists in $_POST before accessing it
+          if (isset($_POST[$postKey])) {
+            $new_value = $_POST[$postKey];
+          } else {
+            $new_value = '';
+          }
+
+          // Update the record in the database
+          $DB->update_record('mdl_values', [
+            'id' => $value->id,
+            'value' => $new_value,
+          ]);
+        }
+      }
+    }
 
     // Output dynamic table
     $table = new html_table();
     $table->responsive = true;
 
     $tableHtml = '<div>';
-    $tableHtml .= '<table>';
     $tableHtml .= '<form method="post">';
     $tableHtml .= '<table class="custom-table table">';
     $tableHtml .= '<tr>
@@ -155,31 +248,29 @@ class CustomTableDinamis extends html_table
                 <td>Persentasi</td>';
 
     foreach ($data['valueAttributes'] as $index => $key) {
-      $tableHtml .= '<td><input type="number" name="' . $key . $data['attributeIds'][$index] . '"></td>';
+      $tableHtml .= '<td><input type="number" name="value_' . $data['attributeIds'][$index] . '"></td>';
     }
 
     $tableHtml .= '<td></td>';
     $tableHtml .= '<td>';
-    $tableHtml .= '<input type="submit" name="submitbutton" value="Submit" style="background-color: green; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">';
+    $tableHtml .= '<input type="submit" name="submitbutton"
+                value="Submit" style="background-color: green; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">';
     $tableHtml .= '</td>';
+    $tableHtml .= '</tr>';
     $tableHtml .= '</table>';
     $tableHtml .= '</form>';
     $tableHtml .= '</div>';
 
     $table->head = $data['labels'];
-    $output_array = [];
-    $count = 1;
-    foreach ($data['user'] as $index => $user) {
-      $output_array[] = array_merge(array($count++), $data['nip'][$index], $user, $data['userValues'][$index]);
-    }
 
-    foreach ($output_array as $key) {
-      $table->data[] = $key;
+    foreach ($data['user'] as $index => $user) {
+      $table->data[] = array_merge(array($index + 1), $data['nip'][$index], $user, $data['userValues'][$index]);
     }
 
     echo $tableHtml;
     return html_writer::table($table);
   }
+
 
   private function getAttributesFromDatabase()
   {
